@@ -1,0 +1,45 @@
+{
+  "page": 1,
+  "page_size": 3,
+  "total_pages": 2,
+  "next_page": 2,
+  "data": [
+    {
+      "student_id": "S1001",
+      "first_name": "Ava",
+      "last_name": "Nguyen",
+      "grade_level": 10,
+      "school_id": "SCH-01",
+      "email": "ava.nguyen@example.edu",
+      "enrollment_status": "inactive",
+      "updated_at": "2026-07-31T10:00:00Z",
+      "guardian_contact": "+1-206-555-0101",
+      "profile": {
+        "home_language": "vi",
+        "iep": false
+      }
+    },
+    {
+      "student_id": "S1003",
+      "first_name": "Sofia",
+      "last_name": "Ramirez",
+      "grade_level": 12,
+      "school_id": "SCH-02",
+      "email": "sofia.ramirez@example.edu",
+      "enrollment_status": "active",
+      "updated_at": "2026-07-01T09:00:00Z",
+      "guardian_contact": "+1-206-555-0103"
+    },
+    {
+      "student_id": "S3001",
+      "first_name": "Elif",
+      "last_name": "Yilmaz",
+      "grade_level": 6,
+      "school_id": "SCH-04",
+      "email": "elif.yilmaz@example.edu",
+      "enrollment_status": "ENROLLED",
+      "updated_at": "2026-07-31T11:30:00Z",
+      "guardian_contact": "+1-206-555-0301"
+    }
+  ]
+}

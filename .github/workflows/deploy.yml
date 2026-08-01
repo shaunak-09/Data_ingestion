@@ -1,0 +1,150 @@
+name: Deploy
+
+# Three jobs, each depending on the last: infrastructure, then database, then the function
+# code. A push to main that only changes src/ still re-runs `terraform apply` (a no-op, since
+# nothing in infra/ changed) before publishing, so the pipeline can never publish code against
+# infrastructure or a schema it hasn't provisioned yet.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write # required for OIDC login to Azure (no client secret is stored)
+  contents: read
+
+jobs:
+  infra:
+    runs-on: ubuntu-latest
+    outputs:
+      function_app_name: ${{ steps.tf-outputs.outputs.function_app_name }}
+      function_identity_name: ${{ steps.tf-outputs.outputs.function_identity_name }}
+      postgres_fqdn: ${{ steps.tf-outputs.outputs.postgres_fqdn }}
+      postgres_database_name: ${{ steps.tf-outputs.outputs.postgres_database_name }}
+      storage_account_name: ${{ steps.tf-outputs.outputs.storage_account_name }}
+      key_vault_name: ${{ steps.tf-outputs.outputs.key_vault_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      # The state storage account itself is a one-time manual bootstrap (see
+      # infra/backend.hcl.example) - Terraform cannot create the state store it then uses.
+      - name: Init (remote state)
+        working-directory: infra
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ vars.TFSTATE_RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ vars.TFSTATE_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ vars.TFSTATE_CONTAINER }}" \
+            -backend-config="key=student-ingestion.tfstate"
+
+      - name: Apply
+        working-directory: infra
+        run: terraform apply -auto-approve
+        env:
+          TF_VAR_postgres_entra_admin_object_id: ${{ vars.POSTGRES_ADMIN_OBJECT_ID }}
+          TF_VAR_postgres_entra_admin_principal_name: ${{ vars.POSTGRES_ADMIN_UPN }}
+          TF_VAR_postgres_entra_admin_principal_type: ${{ vars.POSTGRES_ADMIN_PRINCIPAL_TYPE }}
+          TF_VAR_alert_email: ${{ vars.ALERT_EMAIL }}
+          TF_VAR_api_base_url: ${{ vars.API_BASE_URL }}
+          TF_VAR_api_token_url: ${{ vars.API_TOKEN_URL }}
+          TF_VAR_api_client_id: ${{ vars.API_CLIENT_ID }}
+
+      - name: Read outputs
+        id: tf-outputs
+        working-directory: infra
+        run: |
+          echo "function_app_name=$(terraform output -raw function_app_name)" >> "$GITHUB_OUTPUT"
+          echo "function_identity_name=$(terraform output -raw function_app_identity_name)" >> "$GITHUB_OUTPUT"
+          echo "postgres_fqdn=$(terraform output -raw postgres_fqdn)" >> "$GITHUB_OUTPUT"
+          echo "postgres_database_name=$(terraform output -raw postgres_database_name)" >> "$GITHUB_OUTPUT"
+          echo "storage_account_name=$(terraform output -raw storage_account_name)" >> "$GITHUB_OUTPUT"
+          echo "key_vault_name=$(terraform output -raw key_vault_name)" >> "$GITHUB_OUTPUT"
+
+      # Skipped until API_CLIENT_SECRET_CONFIGURED is set to "true", so the very first deploy
+      # (before a real vendor exists) does not fail on a missing secret.
+      - name: Sync the vendor API secret into Key Vault
+        if: ${{ vars.API_CLIENT_SECRET_CONFIGURED == 'true' }}
+        run: |
+          az keyvault secret set \
+            --vault-name "${{ steps.tf-outputs.outputs.key_vault_name }}" \
+            --name api-client-secret \
+            --value "${{ secrets.API_CLIENT_SECRET }}" \
+            --output none
+
+  database:
+    needs: infra
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install psql
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
+      # Replaces the manual "grant the identity a DB role" step from the README. Runs as the
+      # same Entra admin Terraform just configured, using a short-lived AAD token as the
+      # password - no database credential is stored anywhere.
+      - name: Grant the Function App's identity a database role
+        run: |
+          TOKEN=$(az account get-access-token --resource-type oss-rdbms --query accessToken -o tsv)
+          PGPASSWORD="$TOKEN" psql \
+            "host=${{ needs.infra.outputs.postgres_fqdn }} dbname=postgres user=${{ vars.POSTGRES_ADMIN_UPN }} sslmode=require" \
+            -v identity="${{ needs.infra.outputs.function_identity_name }}" \
+            -f db/bootstrap/grant_function_role.sql
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      # Runs every db/*.sql file not yet recorded in schema_migrations. A schema change is a
+      # new db/NNN_*.sql file; merging it to main is what "publishes" it, with no extra step.
+      - name: Apply pending migrations
+        run: python -m src.cli init-db
+        env:
+          PG_HOST: ${{ needs.infra.outputs.postgres_fqdn }}
+          PG_DATABASE: ${{ needs.infra.outputs.postgres_database_name }}
+          PG_USER: ${{ vars.POSTGRES_ADMIN_UPN }}
+          PG_SSLMODE: require
+          PG_USE_MANAGED_IDENTITY: "true"
+          STORAGE_ACCOUNT_NAME: ${{ needs.infra.outputs.storage_account_name }}
+
+  publish-function:
+    needs: [infra, database]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies into the deploy package
+        run: pip install -r requirements.txt --target .python_packages/lib/site-packages
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ needs.infra.outputs.function_app_name }}
+          package: "."

@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Secrets and local state - never commit
+.env
+local.settings.json
+*.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+backend.hcl
+
+# Local object-store root used by the CLI and tests
+.localstore/

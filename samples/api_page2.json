@@ -1,0 +1,30 @@
+{
+  "page": 2,
+  "page_size": 3,
+  "total_pages": 2,
+  "next_page": null,
+  "data": [
+    {
+      "student_id": "S3002",
+      "first_name": "Jonas",
+      "last_name": "Berg",
+      "grade_level": "K",
+      "school_id": "SCH-04",
+      "email": "jonas.berg@example.edu",
+      "enrollment_status": "active",
+      "updated_at": "2026-07-31T12:00:00Z",
+      "guardian_contact": null
+    },
+    {
+      "student_id": "S3003",
+      "first_name": "Priya",
+      "last_name": "Nair",
+      "grade_level": 8,
+      "school_id": "SCH-04",
+      "email": "priya.nair@example",
+      "enrollment_status": "active",
+      "updated_at": "2026-07-31T12:05:00Z",
+      "guardian_contact": "+1-206-555-0303"
+    }
+  ]
+}

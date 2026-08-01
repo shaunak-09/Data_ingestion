@@ -1,0 +1,15 @@
+# Remote state config. Copy to backend.hcl (git-ignored) for local applies, or pass the same
+# four values as CI/CD variables. This storage account cannot itself be created by this
+# Terraform (state has to exist before Terraform can use it) — create it once by hand or script:
+#
+#   az group create --name rg-tfstate --location eastus
+#   az storage account create --name <globally-unique-name> --resource-group rg-tfstate \
+#       --sku Standard_LRS --allow-blob-public-access false
+#   az storage container create --name tfstate --account-name <globally-unique-name> --auth-mode login
+#
+# Then: terraform init -backend-config=backend.hcl
+
+resource_group_name = "rg-tfstate"
+storage_account_name = "<globally-unique-name>"
+container_name        = "tfstate"
+key                    = "student-ingestion.tfstate"

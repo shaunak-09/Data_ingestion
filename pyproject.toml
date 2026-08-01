@@ -1,0 +1,23 @@
+[project]
+name = "student-ingestion"
+version = "0.1.0"
+description = "Periodic student data ingestion pipeline (CSV + REST API -> PostgreSQL)"
+requires-python = ">=3.11"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "db: requires a reachable PostgreSQL instance (set PG_TEST_DSN)",
+]

@@ -1,0 +1,29 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "LOCAL_STORAGE_ROOT": ".localstore",
+    "BLOB_LANDING_CONTAINER": "landing",
+    "BLOB_PROCESSED_CONTAINER": "processed",
+    "BLOB_QUARANTINE_CONTAINER": "quarantine",
+    "PG_HOST": "localhost",
+    "PG_PORT": "5432",
+    "PG_DATABASE": "students",
+    "PG_USER": "postgres",
+    "PG_PASSWORD": "",
+    "PG_SSLMODE": "prefer",
+    "PG_USE_MANAGED_IDENTITY": "false",
+    "API_BASE_URL": "http://localhost:8099",
+    "API_STUDENTS_PATH": "/students",
+    "API_TOKEN_URL": "http://localhost:8099/oauth2/token",
+    "API_CLIENT_ID": "local-client",
+    "API_CLIENT_SECRET": "",
+    "API_AUTH_TYPE": "oauth2_client_credentials",
+    "API_PAGE_SIZE": "100",
+    "CSV_SCHEDULE_CRON": "0 0 2 * * *",
+    "API_SCHEDULE_CRON": "0 0 * * * *",
+    "CHUNK_SIZE": "5000",
+    "LOG_LEVEL": "INFO"
+  }
+}

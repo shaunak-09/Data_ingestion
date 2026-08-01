@@ -1,0 +1,166 @@
+{
+  "note": "Canonical output for the two sample CSVs. tests/test_samples.py asserts this exactly, so it cannot drift from the code.",
+  "valid_file": {
+    "file": "students_valid.csv",
+    "students": [
+      {
+        "student_id": "S1001",
+        "first_name": "Ava",
+        "last_name": "Nguyen",
+        "grade_level": 9,
+        "school_id": "SCH-01",
+        "email": "ava.nguyen@example.edu",
+        "enrollment_status": "active",
+        "updated_at": "2026-07-30T08:15:00+00:00",
+        "guardian_contact": "+1-206-555-0101",
+        "source_system": "csv",
+        "raw_payload": {
+          "student_id": "S1001",
+          "first_name": "Ava",
+          "last_name": "Nguyen",
+          "grade_level": "9",
+          "school_id": "SCH-01",
+          "email": "ava.nguyen@example.edu",
+          "enrollment_status": "active",
+          "updated_at": "2026-07-30T08:15:00Z",
+          "guardian_contact": "+1-206-555-0101"
+        }
+      },
+      {
+        "student_id": "S1002",
+        "first_name": "Liam",
+        "last_name": "Okafor",
+        "grade_level": 0,
+        "school_id": "SCH-01",
+        "email": "liam.okafor@example.edu",
+        "enrollment_status": "active",
+        "updated_at": "2026-07-30T09:00:00+00:00",
+        "guardian_contact": "+1-206-555-0102",
+        "source_system": "csv",
+        "raw_payload": {
+          "student_id": "S1002",
+          "first_name": "Liam",
+          "last_name": "Okafor",
+          "grade_level": "K",
+          "school_id": "SCH-01",
+          "email": "liam.okafor@example.edu",
+          "enrollment_status": "Enrolled",
+          "updated_at": "2026-07-30 09:00:00",
+          "guardian_contact": "+1-206-555-0102"
+        }
+      },
+      {
+        "student_id": "S1003",
+        "first_name": "Sofia",
+        "last_name": "Ramirez",
+        "grade_level": 12,
+        "school_id": "SCH-02",
+        "email": "sofia.ramirez@example.edu",
+        "enrollment_status": "graduated",
+        "updated_at": "2026-07-29T14:45:00+00:00",
+        "guardian_contact": "+1-206-555-0103",
+        "source_system": "csv",
+        "raw_payload": {
+          "student_id": "S1003",
+          "first_name": "Sofia",
+          "last_name": "Ramirez",
+          "grade_level": "12",
+          "school_id": "SCH-02",
+          "email": "SOFIA.RAMIREZ@example.edu",
+          "enrollment_status": "graduated",
+          "updated_at": "2026-07-29T16:45:00+02:00",
+          "guardian_contact": "+1-206-555-0103"
+        }
+      },
+      {
+        "student_id": "S1004",
+        "first_name": "Noah",
+        "last_name": "Patel",
+        "grade_level": null,
+        "school_id": "SCH-02",
+        "email": "noah.patel@example.edu",
+        "enrollment_status": "transferred",
+        "updated_at": "2026-07-28T00:00:00+00:00",
+        "guardian_contact": null,
+        "source_system": "csv",
+        "raw_payload": {
+          "student_id": "S1004",
+          "first_name": "Noah",
+          "last_name": "Patel",
+          "grade_level": "",
+          "school_id": "SCH-02",
+          "email": "noah.patel@example.edu",
+          "enrollment_status": "transferred",
+          "updated_at": "2026-07-28",
+          "guardian_contact": ""
+        }
+      },
+      {
+        "student_id": "S1005",
+        "first_name": "Mia",
+        "last_name": "Haddad",
+        "grade_level": -1,
+        "school_id": "SCH-03",
+        "email": "mia.haddad@example.edu",
+        "enrollment_status": "withdrawn",
+        "updated_at": "2026-07-31T05:05:05+00:00",
+        "guardian_contact": "+1-206-555-0105",
+        "source_system": "csv",
+        "raw_payload": {
+          "student_id": "S1005",
+          "first_name": "Mia",
+          "last_name": "Haddad",
+          "grade_level": "PK",
+          "school_id": "SCH-03",
+          "email": "mia.haddad@example.edu",
+          "enrollment_status": "withdrawn",
+          "updated_at": "2026-07-31T05:05:05Z",
+          "guardian_contact": "+1-206-555-0105"
+        }
+      }
+    ],
+    "quarantined": []
+  },
+  "malformed_file": {
+    "file": "students_malformed.csv",
+    "students": [
+      {
+        "student_id": "S2008",
+        "first_name": "Zoe",
+        "last_name": "Ali",
+        "grade_level": 2,
+        "school_id": "SCH-01",
+        "email": "zoe.ali@example.edu",
+        "enrollment_status": "active",
+        "updated_at": "2026-07-30T09:00:00+00:00",
+        "guardian_contact": "+1-206-555-0208",
+        "source_system": "csv",
+        "raw_payload": {
+          "student_id": "S2008",
+          "first_name": "Zoe",
+          "last_name": "Ali",
+          "grade_level": "2",
+          "school_id": "SCH-01",
+          "email": "zoe.ali@example.edu",
+          "enrollment_status": "active",
+          "updated_at": "2026-07-30T09:00:00Z",
+          "guardian_contact": "+1-206-555-0208"
+        }
+      }
+    ],
+    "quarantined": [
+      { "student_id": "S2001", "reason_code": "MISSING_REQUIRED_FIELD", "field": "first_name" },
+      { "student_id": "S2002", "reason_code": "INVALID_EMAIL", "field": "email" },
+      { "student_id": "S2003", "reason_code": "INVALID_GRADE_LEVEL", "field": "grade_level" },
+      {
+        "student_id": "S2004",
+        "reason_code": "UNKNOWN_ENROLLMENT_STATUS",
+        "field": "enrollment_status"
+      },
+      { "student_id": "S2005", "reason_code": "INVALID_TIMESTAMP", "field": "updated_at" },
+      { "student_id": "S2006", "reason_code": "MALFORMED_ROW", "field": null },
+      { "student_id": "S2007", "reason_code": "MALFORMED_ROW", "field": null },
+      { "student_id": "S2008", "reason_code": "DUPLICATE_STUDENT_ID", "field": "student_id" }
+    ]
+  }
+}
