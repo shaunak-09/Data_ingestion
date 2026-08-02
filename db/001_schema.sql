@@ -22,7 +22,17 @@ CREATE TABLE IF NOT EXISTS students (
     CONSTRAINT students_grade_level_range
         CHECK (grade_level IS NULL OR grade_level BETWEEN -1 AND 12),
     CONSTRAINT students_enrollment_status_allowed
-        CHECK (enrollment_status IN ('active', 'inactive', 'graduated', 'transferred', 'withdrawn'))
+        CHECK (enrollment_status IN ('active', 'inactive', 'graduated', 'transferred', 'withdrawn')),
+    -- Mirrors MAX_FIELD_LENGTHS in src/transform.py. Kept here so a write path that skips
+    -- validation cannot store a longer value. `enrollment_status` is already bounded above.
+    CONSTRAINT students_field_lengths CHECK (
+        char_length(student_id) <= 64
+        AND char_length(first_name) <= 100
+        AND char_length(last_name) <= 100
+        AND char_length(school_id) <= 64
+        AND char_length(email) <= 255
+        AND (guardian_contact IS NULL OR char_length(guardian_contact) <= 255)
+    )
 );
 
 -- Reporting reads by school; the freshness index also supports incremental extracts.

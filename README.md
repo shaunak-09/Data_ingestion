@@ -18,6 +18,7 @@ flowchart LR
 
 - Architecture and file-by-file map: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Local run, tests, and deploy inputs: [`docs/DEPLOY.md`](docs/DEPLOY.md)
+- Test scenarios and results: [`docs/TEST_RESULTS.md`](docs/TEST_RESULTS.md)
 - Settings reference: [`.env.example`](.env.example)
 - Why it is built this way: [`docs/decisions/`](docs/decisions/README.md)
 - Accepted downsides: [`docs/TRADEOFFS.md`](docs/TRADEOFFS.md)
@@ -71,5 +72,7 @@ Omit `updated_since` on the first run.
 - The vendor API matches the contract above.
 - `updated_at` is trustworthy and monotonic per record. It decides which write wins.
 - Ambiguous dates are rejected, not guessed ([ITD-005](docs/decisions/ITD-005-bad-record-policy.md)).
+- The upload API accepts `.csv` files only. Export native Excel workbooks to CSV first.
+- The scheduled CSV job also reads only `.csv` objects from `landing`.
 - CSVs arrive in Blob Storage directly or through the upload API. Both paths land in the same
   `landing` container ([ITD-007](docs/decisions/ITD-007-csv-trigger-strategy.md)).

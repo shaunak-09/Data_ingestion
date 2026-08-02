@@ -1,0 +1,33 @@
+# Files excluded from the deployment package published by .github/workflows/deploy.yml.
+# Everything the Functions host needs at runtime stays: function_app.py, host.json,
+# requirements.txt, src/, triggers/, db/ and .python_packages/.
+
+.git/
+.github/
+.cursor/
+.vscode/
+
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+.terraform/
+.localstore/
+
+docs/
+infra/
+samples/
+tests/
+
+*.md
+*.pdf
+.env
+.env.example
+.funcignore
+.gitignore
+local.settings.json
+local.settings.json.example
+pyproject.toml
+requirements-dev.txt

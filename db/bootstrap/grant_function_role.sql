@@ -20,10 +20,13 @@ WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'identity');
 
 \connect students
 
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO :"identity";
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO :"identity";
+-- Least privilege: the pipeline only reads and upserts. It must not be able to DELETE or
+-- TRUNCATE student data, so those privileges are withheld deliberately.
+GRANT USAGE ON SCHEMA public TO :"identity";
+GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO :"identity";
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO :"identity";
 
 -- Covers tables/sequences created by migrations applied after this grant runs, so a new
 -- db/NNN_*.sql file never needs a matching manual grant.
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO :"identity";
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO :"identity";
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE ON TABLES TO :"identity";
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO :"identity";

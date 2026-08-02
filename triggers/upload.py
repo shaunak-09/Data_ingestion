@@ -24,6 +24,10 @@ LOG = logging.getLogger(__name__)
 bp = func.Blueprint()
 
 _SAFE_FILENAME = re.compile(r"[^A-Za-z0-9._-]+")
+_CSV_EXTENSION = ".csv"
+_EXCEL_EXTENSIONS = {".xls", ".xlsx", ".xlsm", ".xlsb"}
+_IMAGE_EXTENSIONS = {".bmp", ".gif", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}
+_WORD_EXTENSIONS = {".doc", ".docx"}
 
 
 class UploadError(ValueError):
@@ -91,12 +95,25 @@ def upload_object_name(
     safe_name = _SAFE_FILENAME.sub("-", safe_name).strip(".-_")
     if not safe_name:
         raise UploadError("filename is empty")
-    if not safe_name.lower().endswith(".csv"):
-        raise UploadError("uploaded file must have a .csv extension")
+    extension = PurePath(safe_name).suffix.lower()
+    if extension != _CSV_EXTENSION:
+        raise UploadError(_unsupported_file_message(extension))
 
     timestamp = (now or datetime.now(UTC)).strftime("%Y%m%dT%H%M%SZ")
     suffix = unique_id or uuid.uuid4().hex
     return f"uploads/{timestamp}-{suffix}-{safe_name}"
+
+
+def _unsupported_file_message(extension: str) -> str:
+    if extension in _EXCEL_EXTENSIONS:
+        return "Excel files are not supported yet. Export as CSV."
+    if extension == ".pdf":
+        return "PDF files are not supported yet. Export as CSV."
+    if extension in _IMAGE_EXTENSIONS:
+        return "Image files are not supported yet. Export as CSV."
+    if extension in _WORD_EXTENSIONS:
+        return "Word documents are not supported yet. Export as CSV."
+    return "uploaded file type is not supported yet. Export as CSV."
 
 
 @bp.route(route="csv/upload", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)

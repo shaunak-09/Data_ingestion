@@ -17,6 +17,7 @@ from src.pipeline import (
     JobError,
     build_context,
     csv_source_version,
+    is_csv_source_object,
     run_api_job,
     run_csv_job,
 )
@@ -25,6 +26,11 @@ from tests.mock_api import DEFAULT_CLIENT_ID, DEFAULT_CLIENT_SECRET, MockApiStat
 from tests.mock_api.server import sample_students
 
 pytestmark = pytest.mark.db
+
+CSV_HEADER = (
+    "student_id,first_name,last_name,grade_level,school_id,email,"
+    "enrollment_status,updated_at,guardian_contact"
+)
 
 
 def stage_csv(context, samples_dir, *names: str) -> None:
@@ -35,6 +41,15 @@ def stage_csv(context, samples_dir, *names: str) -> None:
             name,
             (samples_dir / name).read_text(encoding="utf-8"),
         )
+
+
+def write_landing_csv(context, name: str, rows: list[str]) -> None:
+    context.store.ensure_container(context.settings.storage.landing_container)
+    context.store.write_text(
+        context.settings.storage.landing_container,
+        name,
+        f"{CSV_HEADER}\n" + "\n".join(rows) + "\n",
+    )
 
 
 def student_ids(connection) -> list[str]:
@@ -73,6 +88,15 @@ def api_context(pipeline_settings, base_url):
     )
 
 
+def test_csv_source_object_filter_accepts_only_csv_names():
+    assert is_csv_source_object("students.csv")
+    assert is_csv_source_object("uploads/STUDENTS.CSV")
+    assert not is_csv_source_object("students.xlsx")
+    assert not is_csv_source_object("students.pdf")
+    assert not is_csv_source_object("students.png")
+    assert not is_csv_source_object("folder/")
+
+
 def test_csv_job_writes_valid_rows_quarantines_the_rest_and_archives_the_file(
     pipeline_settings, samples_dir, db_connection
 ):
@@ -86,7 +110,6 @@ def test_csv_job_writes_valid_rows_quarantines_the_rest_and_archives_the_file(
 
     reasons = quarantine_reasons(context)
     assert sorted(set(reasons)) == [
-        "DUPLICATE_STUDENT_ID",
         "INVALID_EMAIL",
         "INVALID_GRADE_LEVEL",
         "INVALID_TIMESTAMP",
@@ -94,7 +117,7 @@ def test_csv_job_writes_valid_rows_quarantines_the_rest_and_archives_the_file(
         "MISSING_REQUIRED_FIELD",
         "UNKNOWN_ENROLLMENT_STATUS",
     ]
-    assert len(reasons) == 8
+    assert len(reasons) == 7
 
     assert {info.name for info in context.store.list_objects("processed")} == {
         "students_valid.csv",
@@ -105,6 +128,53 @@ def test_csv_job_writes_valid_rows_quarantines_the_rest_and_archives_the_file(
     runs = db_connection.execute("SELECT status, last_chunk FROM ingest_run ORDER BY id").fetchall()
     assert [status for status, _ in runs] == ["completed", "completed"]
     assert all(last_chunk > 1 for _, last_chunk in runs)  # chunk_size=2, so several chunks
+
+
+def test_wrong_schema_file_is_quarantined_without_stopping_a_good_file(
+    pipeline_settings, samples_dir, db_connection
+):
+    context = build_context(pipeline_settings)
+    stage_csv(context, samples_dir, "students_valid.csv", "students_wrong_schema.csv")
+
+    summaries = run_csv_job(context)
+
+    assert len(summaries) == 2
+    assert student_ids(db_connection) == ["S1001", "S1002", "S1003", "S1004", "S1005"]
+    assert quarantine_reasons(context) == ["MISSING_REQUIRED_FIELD", "MISSING_REQUIRED_FIELD"]
+    runs = db_connection.execute(
+        """
+        SELECT source_object_id, status, rows_read, rows_valid, rows_quarantined, rows_written
+        FROM ingest_run
+        ORDER BY source_object_id
+        """
+    ).fetchall()
+    assert runs == [
+        ("students_valid.csv", "completed", 5, 5, 0, 5),
+        ("students_wrong_schema.csv", "completed", 2, 0, 2, 0),
+    ]
+
+
+def test_csv_job_ignores_non_csv_objects_in_landing(pipeline_settings, samples_dir, db_connection):
+    context = build_context(pipeline_settings)
+    stage_csv(context, samples_dir, "students_valid.csv")
+    landing = context.settings.storage.landing_container
+    context.store.write_bytes(landing, "students.xlsx", b"not a csv")
+    context.store.write_bytes(landing, "report.pdf", b"not a csv")
+    context.store.write_bytes(landing, "photo.png", b"not a csv")
+    context.store.write_bytes(landing, "docs/students.docx", b"not a csv")
+
+    summaries = run_csv_job(context)
+
+    assert len(summaries) == 1
+    assert student_ids(db_connection) == ["S1001", "S1002", "S1003", "S1004", "S1005"]
+    assert {info.name for info in context.store.list_objects("processed")} == {"students_valid.csv"}
+    assert {info.name for info in context.store.list_objects(landing)} == {
+        "docs/students.docx",
+        "photo.png",
+        "report.pdf",
+        "students.xlsx",
+    }
+    assert quarantine_reasons(context) == []
 
 
 def test_reprocessing_the_same_data_changes_nothing(pipeline_settings, samples_dir, db_connection):
@@ -331,3 +401,111 @@ def test_api_updates_csv_rows_only_when_the_api_data_is_fresher(
     )
     # API S1001 is newer than the CSV row, API S1003 is older, so only S1001 changes.
     assert rows == {"S1001": "inactive", "S1003": "graduated"}
+
+
+def test_duplicates_across_chunks_and_files_end_with_the_newest_record(
+    pipeline_settings, db_connection
+):
+    context = build_context(pipeline_settings)
+    write_landing_csv(
+        context,
+        "a_same_file_duplicates.csv",
+        [
+            "S5001,Old,InFile,4,SCH-01,old.infile@example.edu,active,"
+            "2026-07-30T08:00:00Z,+1-206-555-0501",
+            "S5003,Other,Student,5,SCH-01,other.student@example.edu,active,"
+            "2026-07-30T08:05:00Z,+1-206-555-0503",
+            "S5001,New,InFile,4,SCH-01,new.infile@example.edu,active,"
+            "2026-07-30T09:00:00Z,+1-206-555-0501",
+        ],
+    )
+    write_landing_csv(
+        context,
+        "b_cross_file_newer.csv",
+        [
+            "S5002,Newer,CrossFile,6,SCH-02,newer.cross@example.edu,active,"
+            "2026-07-30T10:00:00Z,+1-206-555-0502",
+        ],
+    )
+    write_landing_csv(
+        context,
+        "c_cross_file_older.csv",
+        [
+            "S5002,Older,CrossFile,6,SCH-02,older.cross@example.edu,active,"
+            "2026-07-30T07:00:00Z,+1-206-555-0502",
+        ],
+    )
+
+    summaries = run_csv_job(context)
+
+    rows = dict(
+        db_connection.execute(
+            """
+            SELECT student_id, first_name
+            FROM students
+            WHERE student_id IN ('S5001', 'S5002', 'S5003')
+            ORDER BY student_id
+            """
+        ).fetchall()
+    )
+    assert rows == {"S5001": "New", "S5002": "Newer", "S5003": "Other"}
+    assert quarantine_reasons(context) == []
+    assert sum(summary.inserted for summary in summaries) == 3
+    assert sum(summary.updated for summary in summaries) == 1
+    assert sum(summary.skipped for summary in summaries) == 1
+
+
+def test_future_updated_at_is_quarantined_so_later_real_update_can_land(
+    pipeline_settings, db_connection
+):
+    context = build_context(pipeline_settings)
+    write_landing_csv(
+        context,
+        "a_future.csv",
+        [
+            "S5100,Future,Student,7,SCH-01,future.student@example.edu,active,"
+            "2099-01-01T00:00:00Z,+1-206-555-5100",
+        ],
+    )
+    first = run_csv_job(context)
+    write_landing_csv(
+        context,
+        "b_real_update.csv",
+        [
+            "S5100,Real,Student,7,SCH-01,real.student@example.edu,inactive,"
+            "2026-08-01T00:00:00Z,+1-206-555-5100",
+        ],
+    )
+
+    second = run_csv_job(context)
+
+    row = db_connection.execute(
+        "SELECT first_name, enrollment_status, updated_at FROM students WHERE student_id = 'S5100'"
+    ).fetchone()
+    assert first[0].inserted == 0
+    assert first[0].quarantined == 1
+    assert second[0].inserted == 1
+    assert row == ("Real", "inactive", datetime(2026, 8, 1, tzinfo=UTC))
+    assert quarantine_reasons(context) == ["INVALID_TIMESTAMP"]
+
+
+def test_large_csv_batch_loads_all_rows_and_counts_chunks(pipeline_settings, db_connection):
+    context = build_context(replace(pipeline_settings, chunk_size=5000))
+    rows = [
+        f"S{index:05d},First{index},Last{index},{index % 13},SCH-{index % 10:02d},"
+        f"student{index}@example.edu,active,2026-07-30T00:00:00Z,+1-206-555-0000"
+        for index in range(50_000)
+    ]
+    write_landing_csv(context, "large_batch.csv", rows)
+
+    summaries = run_csv_job(context)
+
+    assert len(summaries) == 1
+    assert summaries[0].chunks == 10
+    assert summaries[0].read == 50_000
+    assert summaries[0].valid == 50_000
+    assert summaries[0].quarantined == 0
+    assert summaries[0].inserted == 50_000
+    assert summaries[0].updated == 0
+    assert summaries[0].skipped == 0
+    assert db_connection.execute("SELECT count(*) FROM students").fetchone()[0] == 50_000

@@ -19,5 +19,5 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 testpaths = ["tests"]
 addopts = "-q"
 markers = [
-    "db: requires a reachable PostgreSQL instance (set PG_TEST_DSN)",
+    "db: requires a reachable PostgreSQL instance (set PG_TEST_DSN or local PG_* settings)",
 ]

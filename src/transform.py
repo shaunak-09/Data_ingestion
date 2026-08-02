@@ -90,7 +90,13 @@ def parse_grade_level(value: Any) -> int | None:
     if alias is not None:
         return alias
     try:
-        grade = int(float(text)) if "." in text else int(text)
+        if "." in text:
+            numeric_grade = float(text)
+            if not numeric_grade.is_integer():
+                return None
+            grade = int(numeric_grade)
+        else:
+            grade = int(text)
     except ValueError:
         return None
     if MIN_GRADE_LEVEL <= grade <= MAX_GRADE_LEVEL:

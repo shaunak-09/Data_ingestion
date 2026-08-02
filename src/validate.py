@@ -5,7 +5,7 @@ This module never raises on bad data. It answers with (valid rows, quarantined r
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from src.models import (
@@ -26,6 +26,7 @@ from src.transform import (
 )
 
 Failure = tuple[ReasonCode, str, str | None]
+MAX_FUTURE_UPDATED_AT_SKEW = timedelta(days=1)
 
 
 def _malformed_reason(record: dict[str, Any]) -> Failure | None:
@@ -59,10 +60,17 @@ def _field_failure(record: dict[str, Any]) -> Failure | None:
             "enrollment_status",
         )
 
-    if parse_timestamp(record.get("updated_at")) is None:
+    updated_at = parse_timestamp(record.get("updated_at"))
+    if updated_at is None:
         return (
             ReasonCode.INVALID_TIMESTAMP,
             "updated_at is not an unambiguous ISO 8601 timestamp",
+            "updated_at",
+        )
+    if updated_at > datetime.now(UTC) + MAX_FUTURE_UPDATED_AT_SKEW:
+        return (
+            ReasonCode.INVALID_TIMESTAMP,
+            "updated_at is too far in the future",
             "updated_at",
         )
 

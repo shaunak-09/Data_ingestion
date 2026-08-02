@@ -49,9 +49,13 @@ python -m pytest
 For database tests, also provide:
 
 ```bash
-$env:PG_TEST_DSN = "postgresql://postgres:<password>@localhost:5432/postgres"
+$env:PG_TEST_DSN = "postgresql://postgres:<password>@localhost:5433/postgres"
 python -m pytest
 ```
+
+If `.env` has `PG_HOST`, `PG_PORT`, `PG_USER`, `PG_PASSWORD`, and `PG_SSLMODE`, pytest loads it
+and builds the test DSN automatically. It connects to the `postgres` maintenance database and
+creates a scratch database named `students_test`.
 
 
 

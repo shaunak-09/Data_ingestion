@@ -2,10 +2,10 @@
 
 Everything runs with no Azure account and no network.
 
-Database tests additionally need a PostgreSQL you are happy to write to. They are skipped
-unless `PG_TEST_DSN` is set, for example:
+Database tests additionally need a PostgreSQL you are happy to write to. They load `.env`, then use
+`PG_TEST_DSN` if set. If not, they build a test DSN from the local `PG_*` settings.
 
-    $env:PG_TEST_DSN = "postgresql://postgres:<password>@localhost:5432/postgres"
+    $env:PG_TEST_DSN = "postgresql://postgres:<password>@localhost:5433/postgres"
 
 They create (and drop) a scratch database called `students_test` on that server.
 """
@@ -19,7 +19,8 @@ from pathlib import Path
 
 import psycopg
 import pytest
-from psycopg.conninfo import conninfo_to_dict
+from dotenv import load_dotenv
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
 from src.config import ApiSettings, DatabaseSettings, RetrySettings, Settings, StorageSettings
 from src.persist import DB_RETRY_ERRORS, Database, apply_schema
@@ -29,6 +30,37 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SAMPLES_DIR = REPO_ROOT / "samples"
 SCHEMA_FILE = REPO_ROOT / "db" / "001_schema.sql"
 TEST_DATABASE = "students_test"
+
+load_dotenv(REPO_ROOT / ".env")
+
+
+def _pg_test_dsn() -> str | None:
+    explicit = os.environ.get("PG_TEST_DSN")
+    if explicit:
+        return explicit
+
+    user = os.environ.get("PG_USER")
+    if not user:
+        return None
+
+    port_text = os.environ.get("PG_PORT", "5432")
+    try:
+        port = int(port_text)
+    except ValueError:
+        pytest.skip("PG_PORT must be an integer to build PG_TEST_DSN")
+
+    options: dict[str, object] = {
+        "host": os.environ.get("PG_HOST", "localhost"),
+        "port": port,
+        "dbname": os.environ.get("PG_TEST_MAINTENANCE_DATABASE", "postgres"),
+        "user": user,
+        "sslmode": os.environ.get("PG_SSLMODE", "prefer"),
+    }
+    password = os.environ.get("PG_PASSWORD")
+    if password:
+        options["password"] = password
+
+    return make_conninfo(**options)
 
 
 @pytest.fixture(scope="session")
@@ -53,9 +85,9 @@ def fast_retryer() -> Retryer:
 
 @pytest.fixture(scope="session")
 def db_settings() -> DatabaseSettings:
-    dsn = os.environ.get("PG_TEST_DSN")
+    dsn = _pg_test_dsn()
     if not dsn:
-        pytest.skip("set PG_TEST_DSN to run database tests")
+        pytest.skip("set PG_TEST_DSN or local PG_* settings to run database tests")
 
     params = conninfo_to_dict(dsn)
     try:

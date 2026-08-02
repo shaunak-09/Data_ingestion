@@ -1,4 +1,7 @@
-"""Run bookkeeping and the API watermark. Requires PostgreSQL (see tests/conftest.py)."""
+"""Schema constraints, run bookkeeping and the API watermark.
+
+Requires PostgreSQL (see tests/conftest.py).
+"""
 
 from __future__ import annotations
 
@@ -39,6 +42,19 @@ def claim(
         correlation_id=correlation_id,
         stale_after_seconds=stale_after_seconds,
     )
+
+
+def test_the_schema_rejects_a_value_longer_than_the_validator_allows(db_connection):
+    """`MAX_FIELD_LENGTHS` is enforced by the database too, not only by src/validate.py."""
+    with pytest.raises(psycopg.errors.CheckViolation):
+        db_connection.execute(
+            """
+            INSERT INTO students (student_id, first_name, last_name, school_id, email,
+                                  enrollment_status, updated_at, source_system)
+            VALUES (%s, 'Ava', 'Nguyen', 'SCH-01', 'ava@example.edu', 'active', now(), 'csv')
+            """,
+            ("S" * 65,),
+        )
 
 
 def test_a_new_unit_of_work_is_claimed(db_connection):

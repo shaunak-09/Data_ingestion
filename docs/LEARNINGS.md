@@ -23,6 +23,7 @@ If the rule should always apply, also add it to `AGENTS.md`.
 ---
 
 ## L-002: Used the wrong Azure Functions timeout
+
 - **Date:** 2026-07-31
 - **Severity:** Medium
 - **Area:** Cloud
@@ -46,7 +47,10 @@ using them in a decision.
 
 ---
 
+
+
 ## L-003: Bind downloads to the claimed blob version
+
 - **Date:** 2026-08-01
 - **Severity:** High
 - **Area:** Data
@@ -66,7 +70,10 @@ that file. Other files continue, and the new version can run on the next scan.
 
 ---
 
+
+
 ## L-004: Bind archive moves to the claimed blob version
+
 - **Date:** 2026-08-02
 - **Severity:** High
 - **Area:** Data
@@ -86,7 +93,10 @@ the committed run stays completed and the changed file remains in `landing`.
 
 ---
 
+
+
 ## L-005: Include chunk size in CSV resume identity
+
 - **Date:** 2026-08-02
 - **Severity:** High
 - **Area:** Data
@@ -105,7 +115,10 @@ size starts a new run from chunk 1, and idempotent upserts make already-written 
 
 ---
 
+
+
 ## L-006: Verify Terraform provider schema before using Flex-only attributes
+
 - **Date:** 2026-08-02
 - **Severity:** Medium
 - **Area:** Cloud
@@ -121,3 +134,25 @@ size starts a new run from chunk 1, and idempotent upserts make already-written 
 `keyVaultReferenceIdentity` property.
 
 **Rule:** Validate the locked provider schema before relying on Flex Consumption attributes.
+
+---
+
+## L-007: Real-data tests exposed policy gaps
+
+- **Date:** 2026-08-02
+- **Severity:** Medium
+- **Area:** Data
+
+**Mistake:** Some real source-data edge cases had no explicit policy.
+
+**Impact:** Undefined edge cases can silently change data, block real updates, or confuse operators.
+
+**Signal:** Real-data tests covered fractional grades, future dates, API `null` items, duplicate
+CSV headers, wrong-schema files, and unsupported upload types.
+
+**Correction:** Decimal grades are rejected, future dates quarantine, uploads and landing scans are
+CSV-only, API `null` items are intentionally dropped, and duplicate CSV headers use the last value.
+Remaining details are documented in [`docs/TEST_RESULTS.md`](./TEST_RESULTS.md).
+
+**Rule:** Real-data edge cases need an explicit policy before implementation changes.
+

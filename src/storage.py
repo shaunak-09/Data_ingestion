@@ -216,7 +216,7 @@ class BlobObjectStore:
     ) -> None:
         # Streamed copy, not a server-side copy: server-side copy needs a SAS or a source
         # authorization header, which we avoid so plain RBAC is the only permission needed.
-        # Memory stays bounded because both sides stream. See T-006.
+        # Memory stays bounded because both sides stream.
         source = self._client.get_blob_client(container, name)
         options = (
             {"etag": expected_version, "match_condition": MatchConditions.IfNotModified}

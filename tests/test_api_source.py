@@ -15,7 +15,7 @@ import requests
 from src.config import ApiSettings
 from src.http import UnauthorizedError
 from src.ingest.api_auth import OAuth2ClientCredentialsAuth, build_auth
-from src.ingest.api_source import StudentApiClient
+from src.ingest.api_source import StudentApiClient, _extract_records
 from src.retry import RetryableError, Retryer, RetryPolicy
 from tests.mock_api import DEFAULT_CLIENT_ID, DEFAULT_CLIENT_SECRET, MockApiState, mock_api
 
@@ -177,3 +177,32 @@ def test_expired_token_is_refreshed_before_the_next_call():
     assert first == cached
     assert refreshed != first
     assert len(s.issued_tokens) == 2
+
+
+@pytest.mark.parametrize("key", ["data", "students", "items", "results"])
+def test_supported_record_list_keys_are_read(key):
+    payload = {key: students(2)}
+
+    records = _extract_records(payload)
+
+    assert [record["student_id"] for record in records] == ["S000", "S001"]
+
+
+def test_top_level_list_response_is_read():
+    records = _extract_records(students(2))
+
+    assert [record["student_id"] for record in records] == ["S000", "S001"]
+
+
+def test_null_api_items_are_dropped_without_a_record():
+    payload = {"data": [students(1)[0], None, students(2)[1]]}
+
+    records = _extract_records(payload)
+
+    assert [record["student_id"] for record in records] == ["S000", "S001"]
+
+
+def test_nested_profile_object_is_preserved_in_the_record():
+    student = {**students(1)[0], "profile": {"home_language": "vi", "iep": False}}
+
+    assert _extract_records({"data": [student]}) == [student]

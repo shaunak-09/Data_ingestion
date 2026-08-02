@@ -68,6 +68,23 @@ def test_unusable_grade_levels_return_none(raw):
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [
+        ("10.0", 10),
+        ("9.5", None),
+        ("09", 9),
+        ("TK", None),
+        ("Grade 9", None),
+        ("9th", None),
+        ("-2", None),
+        ("999", None),
+    ],
+)
+def test_real_system_grade_values_pin_current_behavior(raw, expected):
+    assert parse_grade_level(raw) == expected
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
         ("active", "active"),
         ("ENROLLED", "active"),
         ("Transferred Out", "transferred"),
@@ -100,6 +117,19 @@ def test_timestamps_land_in_utc(raw, expected):
 def test_ambiguous_or_unparseable_timestamps_are_rejected(raw):
     """Guessing between day-first and month-first would silently corrupt freshness checks."""
     assert parse_timestamp(raw) is None
+
+
+def test_future_timestamp_is_currently_accepted():
+    assert parse_timestamp("2099-01-01") == datetime(2099, 1, 1, tzinfo=UTC)
+
+
+@pytest.mark.parametrize("raw", [1710000000, "2026-13-45"])
+def test_bad_real_system_dates_return_none(raw):
+    assert parse_timestamp(raw) is None
+
+
+def test_mixed_timezone_timestamps_land_in_utc():
+    assert parse_timestamp("2026-07-30T08:00:00-04:00") == datetime(2026, 7, 30, 12, 0, tzinfo=UTC)
 
 
 @pytest.mark.parametrize(

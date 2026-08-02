@@ -50,6 +50,11 @@ def csv_source_version(blob_version: str, chunk_size: int) -> str:
     return f"{blob_version}:{chunk_size}"
 
 
+def is_csv_source_object(name: str) -> bool:
+    """Only CSV source objects are eligible for the CSV pipeline."""
+    return name.lower().endswith(".csv")
+
+
 class JobError(RuntimeError):
     """A job finished with at least one unit of work unprocessed."""
 
@@ -222,7 +227,7 @@ def run_csv_job(context: PipelineContext, correlation_id: str | None = None) -> 
     objects = [
         info
         for info in context.store.list_objects(storage.landing_container)
-        if info.name.lower().endswith(".csv")
+        if is_csv_source_object(info.name)
     ]
     log_event(LOG, logging.INFO, "csv.scan_complete", candidates=len(objects))
 

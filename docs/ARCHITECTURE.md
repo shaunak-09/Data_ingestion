@@ -37,8 +37,10 @@ flowchart LR
 
 
 
-1. A CSV is uploaded directly to Blob Storage or through the HTTP upload API.
-2. The CSV timer scans `landing`, or the API timer starts an incremental pull.
+1. A CSV is uploaded directly to Blob Storage or through the HTTP upload API. Native Excel files
+must be exported to CSV first.
+2. The CSV timer scans only `.csv` objects in `landing`, or the API timer starts an incremental
+  pull. Other file types and folder-like paths are ignored.
 3. Ingestion reads bounded chunks. The API client also handles authentication, pagination, and
   retries.
 4. Validation separates valid and invalid records.
@@ -85,7 +87,8 @@ rules around that loop.
 
 - `triggers/csv.py` scans `landing` on `CSV_SCHEDULE_CRON`.
 - `triggers/api.py` polls the API on `API_SCHEDULE_CRON`.
-- `triggers/upload.py` accepts a function-key-protected CSV upload and writes it to `landing`.
+- `triggers/upload.py` accepts a function-key-protected `.csv` upload, rejects unsupported file
+types, and writes accepted files to `landing`.
 - `function_app.py` only registers these trigger blueprints.
 
 Azure Functions imports stay in `triggers/` and `function_app.py`. The shared pipeline in `src/`
@@ -100,11 +103,14 @@ Required source fields:
 - `student_id`
 - `first_name`
 - `last_name`
-- `grade_level`
 - `school_id`
 - `email`
 - `enrollment_status`
 - `updated_at`
+
+Optional source fields:
+
+- `grade_level`
 - `guardian_contact`
 
 Internal fields are `source_system`, `raw_payload`, and `ingested_at`.
@@ -153,8 +159,11 @@ not enter code, configuration, or Terraform state.
 - API `429`: honor `Retry-After`, then retry with backoff.
 - Retryable API `5xx`: retry with backoff and jitter; fail and alert after the limit.
 - Database unavailable: retry; leave CSV input in `landing`.
-- Interrupted run: resume from the saved chunk for the same object version and chunk size. Stale
+- Interrupted CSV run: resume from the saved chunk for the same object version and chunk size. Stale
 `running` runs are reclaimed after the configured lease window.
+- Interrupted API run: the watermark is the resume point, not the chunk counter. Each API sync
+claims a new run, so it always re-reads from the last successful watermark. Nothing is skipped
+because the watermark advances only after every page succeeds.
 - Older record: make the upsert a no-op.
 - Repeated run: use the run claim and idempotent upsert to avoid duplicate effects.
 - Missed or failed run: send an Application Insights alert.

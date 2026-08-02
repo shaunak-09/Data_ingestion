@@ -41,7 +41,7 @@ jobs:
       - name: Format check (black)
         run: black --check .
 
-      - name: Tests (unit + DB-backed, all 98)
+      - name: Tests (unit + DB-backed)
         run: pytest
         env:
           PG_TEST_DSN: postgresql://postgres:postgres@localhost:5432/postgres

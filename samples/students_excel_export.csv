@@ -1,0 +1,6 @@
+updated_at,email,student_id,first_name,last_name,grade_level,school_id,enrollment_status,guardian_contact,email
+2026-07-30T08:15:00Z,ignored.ava@example.edu,S9001, Ava ,"Nguyen, Jr.", 10 , SCH-01 , Active ,"123 Main St
+Apt 4",ava.nguyen@example.edu
+
+2026-07-30T09:00:00Z,ignored.jose@example.edu,S9002, José ,García,09,SCH-02,ENROLLED,"Calle Ocho",jose.garcia@example.edu
+2026-07-30T10:30:00Z,ignored.leyla@example.edu,S9003,Leyla,Öztürk,K,SCH-03,transferred,"Ankara Road",leyla.ozturk@example.edu

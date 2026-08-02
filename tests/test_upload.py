@@ -105,6 +105,19 @@ def test_upload_csv_writes_file_to_landing(monkeypatch, upload_settings):
     assert stored.read_bytes() == b"student_id,email\n1,a@example.com\n"
 
 
+def test_upload_accepts_excel_exported_csv(monkeypatch, upload_settings):
+    monkeypatch.setattr(upload, "load_settings", lambda: upload_settings)
+    content_type, body = multipart_body(
+        "students.csv",
+        b"student_id,email\n1,a@example.com\n",
+        content_type="application/vnd.ms-excel",
+    )
+
+    response = upload.upload_csv(FakeRequest(content_type, body))
+
+    assert response.status_code == 201
+
+
 def test_upload_csv_rejects_non_multipart_request(monkeypatch, upload_settings):
     monkeypatch.setattr(upload, "load_settings", lambda: upload_settings)
 
@@ -114,11 +127,25 @@ def test_upload_csv_rejects_non_multipart_request(monkeypatch, upload_settings):
     assert response_json(response) == {"error": "request must use multipart/form-data"}
 
 
-def test_upload_csv_rejects_non_csv_filename(monkeypatch, upload_settings):
+@pytest.mark.parametrize(
+    ("filename", "expected_error"),
+    [
+        ("students.xlsx", "Excel files are not supported yet. Export as CSV."),
+        ("students.xls", "Excel files are not supported yet. Export as CSV."),
+        ("students.pdf", "PDF files are not supported yet. Export as CSV."),
+        ("students.png", "Image files are not supported yet. Export as CSV."),
+        ("students.docx", "Word documents are not supported yet. Export as CSV."),
+        ("students.txt", "uploaded file type is not supported yet. Export as CSV."),
+        ("students", "uploaded file type is not supported yet. Export as CSV."),
+    ],
+)
+def test_upload_csv_rejects_unsupported_file_types(
+    monkeypatch, upload_settings, filename, expected_error
+):
     monkeypatch.setattr(upload, "load_settings", lambda: upload_settings)
-    content_type, body = multipart_body("students.txt", b"student_id,email\n")
+    content_type, body = multipart_body(filename, b"not,csv\n")
 
     response = upload.upload_csv(FakeRequest(content_type, body))
 
     assert response.status_code == 400
-    assert response_json(response) == {"error": "uploaded file must have a .csv extension"}
+    assert response_json(response) == {"error": expected_error}

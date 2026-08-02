@@ -63,6 +63,7 @@ jobs:
         id: tf-outputs
         working-directory: infra
         run: |
+          echo "resource_group_name=$(terraform output -raw resource_group_name)" >> "$GITHUB_OUTPUT"
           echo "function_app_name=$(terraform output -raw function_app_name)" >> "$GITHUB_OUTPUT"
           echo "function_identity_name=$(terraform output -raw function_app_identity_name)" >> "$GITHUB_OUTPUT"
           echo "postgres_fqdn=$(terraform output -raw postgres_fqdn)" >> "$GITHUB_OUTPUT"
@@ -80,6 +81,43 @@ jobs:
             --name api-client-secret \
             --value "${{ secrets.API_CLIENT_SECRET }}" \
             --output none
+
+      # Terraform creates the app with a Key Vault reference in API_CLIENT_SECRET, but
+      # keyVaultReferenceIdentity is only attached afterwards by azapi_update_resource. Until the
+      # app re-reads its settings, the reference resolves against an identity that did not exist
+      # when the setting was written. Restart once, after the secret exists, so the first run
+      # never sees the unresolved literal.
+      - name: Restart the Function App so Key Vault references resolve
+        run: |
+          az functionapp restart \
+            --name "${{ steps.tf-outputs.outputs.function_app_name }}" \
+            --resource-group "${{ steps.tf-outputs.outputs.resource_group_name }}" \
+            --output none
+
+      # `az functionapp config appsettings list` always echoes the literal @Microsoft.KeyVault(...)
+      # string, so it cannot tell you whether resolution worked. The configreferences endpoint
+      # reports the real status. Fail the deploy here rather than at the first vendor API call.
+      - name: Verify the API secret reference resolved
+        if: ${{ vars.API_CLIENT_SECRET_CONFIGURED == 'true' }}
+        run: |
+          SITE_ID=$(az functionapp show \
+            --name "${{ steps.tf-outputs.outputs.function_app_name }}" \
+            --resource-group "${{ steps.tf-outputs.outputs.resource_group_name }}" \
+            --query id -o tsv)
+          # Resolution happens as the restarted app comes up, so poll rather than check once.
+          for attempt in 1 2 3 4 5 6; do
+            STATUS=$(az rest --method get \
+              --url "https://management.azure.com${SITE_ID}/config/configreferences/appsettings?api-version=2022-03-01" \
+              --query "value[?name=='API_CLIENT_SECRET'].properties.status | [0]" -o tsv)
+            echo "attempt ${attempt}: API_CLIENT_SECRET reference status = ${STATUS:-<none>}"
+            if [ "$STATUS" = "Resolved" ]; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Key Vault reference did not resolve. Check keyVaultReferenceIdentity and the" \
+               "Key Vault Secrets User role assignment." >&2
+          exit 1
 
   database:
     needs: infra

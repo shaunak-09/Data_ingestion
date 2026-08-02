@@ -82,6 +82,34 @@ def test_bad_grade_status_and_timestamp_each_get_their_own_reason():
     ]
 
 
+def test_epoch_number_and_impossible_calendar_date_are_invalid_timestamps():
+    _, quarantined = run(
+        [
+            {**GOOD, "student_id": "EPOCH", "updated_at": 1710000000},
+            {**GOOD, "student_id": "BAD-DATE", "updated_at": "2026-13-45"},
+        ]
+    )
+
+    assert [record.reason for record in quarantined] == [
+        ReasonCode.INVALID_TIMESTAMP,
+        ReasonCode.INVALID_TIMESTAMP,
+    ]
+
+
+def test_fractional_grade_is_invalid():
+    _, quarantined = run([{**GOOD, "student_id": "FRACTIONAL", "grade_level": "9.5"}])
+
+    assert quarantined[0].reason is ReasonCode.INVALID_GRADE_LEVEL
+
+
+def test_future_timestamp_is_invalid():
+    valid, quarantined = run([{**GOOD, "student_id": "FUTURE", "updated_at": "2099-01-01"}])
+
+    assert valid == []
+    assert quarantined[0].reason is ReasonCode.INVALID_TIMESTAMP
+    assert quarantined[0].detail == "updated_at is too far in the future"
+
+
 def test_over_long_value_is_rejected():
     _, quarantined = run([{**GOOD, "student_id": "x" * 65}])
 
