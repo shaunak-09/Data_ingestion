@@ -45,7 +45,7 @@
           "school_id": "SCH-01",
           "email": "liam.okafor@example.edu",
           "enrollment_status": "Enrolled",
-          "updated_at": "2026-07-30 09:00:00",
+          "updated_at": "2026-07-30T09:00:00Z",
           "guardian_contact": "+1-206-555-0102"
         }
       },
@@ -68,7 +68,7 @@
           "school_id": "SCH-02",
           "email": "SOFIA.RAMIREZ@example.edu",
           "enrollment_status": "graduated",
-          "updated_at": "2026-07-29T16:45:00+02:00",
+          "updated_at": "2026-07-29T14:45:00Z",
           "guardian_contact": "+1-206-555-0103"
         }
       },
@@ -91,7 +91,7 @@
           "school_id": "SCH-02",
           "email": "noah.patel@example.edu",
           "enrollment_status": "transferred",
-          "updated_at": "2026-07-28",
+          "updated_at": "2026-07-28T00:00:00Z",
           "guardian_contact": ""
         }
       },

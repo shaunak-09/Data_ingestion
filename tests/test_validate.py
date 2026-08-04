@@ -103,7 +103,9 @@ def test_fractional_grade_is_invalid():
 
 
 def test_future_timestamp_is_invalid():
-    valid, quarantined = run([{**GOOD, "student_id": "FUTURE", "updated_at": "2099-01-01"}])
+    valid, quarantined = run(
+        [{**GOOD, "student_id": "FUTURE", "updated_at": "2099-01-01T00:00:00Z"}]
+    )
 
     assert valid == []
     assert quarantined[0].reason is ReasonCode.INVALID_TIMESTAMP

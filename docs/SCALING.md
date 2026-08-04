@@ -2,44 +2,32 @@
 
 ## Current design
 
-The Function App has two timer-triggered functions:
+Two timer-triggered functions: 
 
-- CSV scans `landing` on `CSV_SCHEDULE_CRON`.
-- API pulls updates on `API_SCHEDULE_CRON`.
+CSV scans `landing` on `CSV_SCHEDULE_CRON`;   
+API pulls updates on `API_SCHEDULE_CRON`.   
+Azure allows only one active invocation per function, so files/pages within  
+each job run one after another. The app scales to zero when idle; Terraform caps it at 40  
+instances, but nothing fans a single job out across them yet.
 
-Azure allows only one active invocation of each timer-triggered function. Multiple CSV files are
-processed one after another. API pages are also fetched and processed one after another.
-
-The app can scale to zero when both jobs are idle. Terraform sets the default maximum to 40
-instances, but the current design does not fan out one job across that capacity.
-
-### Overlapping CSV and API schedules
-
-CSV and API have separate timer locks. A CSV run blocks only the next CSV run. An API run blocks
-only the next API run.
-
-If both schedules fire together, both jobs can run at the same time. Azure may place them on the
-same host instance or different instances. Inside each job, work is still sequential: CSV files run
-one by one, and API pages run one by one.
-
-This is safe because PostgreSQL writes use transactions and conditional upserts. Offset the
-schedules only if load tests show database, memory, or vendor API pressure.
+CSV and API have separate timer locks, so they can run at the same time as each other (possibly on
+different host instances), but each job's own work stays sequential. This is safe because
+PostgreSQL writes use transactions and conditional upserts.
 
 The current design still handles larger inputs safely:
 
-- CSV files are streamed instead of loaded into memory.
+- CSV files are streamed, not loaded fully into memory.
 - API responses are read one page at a time.
 - Records are committed in bounded chunks.
-- Checkpoints make failed or stale interrupted runs safe to resume.
-- Conditional database upserts make repeated work safe.
+- Checkpoints make failed or stale runs safe to resume.
+- Conditional upserts make repeated work safe.
 
-This is the recommended design for the current workload: small daily CSV files and incremental API
-updates.
+
 
 ## Future scale-out design
 
-Add queue-based workers only when load tests show that sequential processing cannot meet the
-required completion time.
+Add queue-based workers only when load tests show sequential processing can't meet the required
+completion time.
 
 ```mermaid
 flowchart LR
@@ -52,18 +40,18 @@ flowchart LR
   WorkerC --> Database
 ```
 
+
+
 The timer becomes a dispatcher:
 
-1. For CSV, enqueue one task per file. Split very large files into stable chunk blobs and enqueue
-   one task per chunk.
-2. For API, follow pagination in order, then enqueue each fetched page for processing. Fetch pages
-   in parallel only if the vendor guarantees independent page access and a consistent snapshot.
+1. CSV: enqueue one task per file (or per chunk blob, for very large files).
+2. API: follow pagination in order, enqueue each fetched page. Fetch pages in parallel only if the
+  vendor guarantees independent page access and a consistent snapshot.
 3. Queue-triggered workers validate, transform, quarantine, and upsert chunks independently.
 4. Archive a CSV file or advance the API watermark only after every task in the run succeeds.
 
-Queue backlog gives Azure work it can distribute across Function instances. Start with 4–8 worker
-instances and increase the limit only after checking PostgreSQL connections, API rate limits, and
-run duration.
+Start with 4–8 worker instances; raise the limit only after checking PostgreSQL connections, API
+rate limits, and run duration.
 
 ## When to change
 

@@ -1,6 +1,6 @@
 student_id,first_name,last_name,grade_level,school_id,email,enrollment_status,updated_at,guardian_contact
 S1001,Ava,Nguyen,9,SCH-01,ava.nguyen@example.edu,active,2026-07-30T08:15:00Z,+1-206-555-0101
-S1002,Liam,Okafor,K,SCH-01,liam.okafor@example.edu,Enrolled,2026-07-30 09:00:00,+1-206-555-0102
-S1003,Sofia,Ramirez,12,SCH-02,SOFIA.RAMIREZ@example.edu,graduated,2026-07-29T16:45:00+02:00,+1-206-555-0103
-S1004,Noah,Patel,,SCH-02,noah.patel@example.edu,transferred,2026-07-28,
+S1002,Liam,Okafor,K,SCH-01,liam.okafor@example.edu,Enrolled,2026-07-30T09:00:00Z,+1-206-555-0102
+S1003,Sofia,Ramirez,12,SCH-02,SOFIA.RAMIREZ@example.edu,graduated,2026-07-29T14:45:00Z,+1-206-555-0103
+S1004,Noah,Patel,,SCH-02,noah.patel@example.edu,transferred,2026-07-28T00:00:00Z,
 S1005,Mia,Haddad,PK,SCH-03,mia.haddad@example.edu,withdrawn,2026-07-31T05:05:05Z,+1-206-555-0105

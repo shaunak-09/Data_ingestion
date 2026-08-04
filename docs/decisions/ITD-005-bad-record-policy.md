@@ -30,6 +30,10 @@ data.
 Blank values are allowed only where the schema explicitly permits them. That rule belongs in the
 normal transform, not in an error fallback.
 
+Timestamps follow one convention instead of being guessed: CSV and API inputs use ISO 8601 UTC, for
+example `2026-07-31T10:00:00Z`. Slash dates like `03/04/2026` are quarantined as
+`INVALID_TIMESTAMP`; the parser does not guess whether they are day-first or month-first.
+
 ### Why not the others
 
 **Fill optional fields with defaults:** A default can change the meaning of the source data and

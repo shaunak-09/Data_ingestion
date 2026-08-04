@@ -22,16 +22,20 @@ Cloud: **Azure**. IaC: **Terraform**.
 
 ### Grading areas
 
-| Area | Meaning |
-|---|---|
-| Architecture | Separate modules: ingest, validate, transform, persist, monitor |
+
+| Area             | Meaning                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| Architecture     | Separate modules: ingest, validate, transform, persist, monitor                    |
 | Data correctness | Strong validation, duplicates handled, deterministic transforms, idempotent writes |
-| Cloud readiness | Managed services, least-privilege identity, Key Vault secrets, deployable IaC |
-| Reliability | Retries with backoff, quarantine, observability, safe reprocessing |
-| Scalability | Small daily files → large batches without redesign |
-| Maintainability | Readable modular code, tests, docs, explicit assumptions |
+| Cloud readiness  | Managed services, least-privilege identity, Key Vault secrets, deployable IaC      |
+| Reliability      | Retries with backoff, quarantine, observability, safe reprocessing                 |
+| Scalability      | Small daily files → large batches without redesign                                 |
+| Maintainability  | Readable modular code, tests, docs, explicit assumptions                           |
+
 
 ---
+
+
 
 ## 2. Documentation writing rules
 
@@ -46,17 +50,23 @@ If a sentence does not help someone act or decide, delete it.
 
 ---
 
+
+
 ## 3. Documentation contract
 
 Write docs **as work happens**, not at the end. Each file has one job.
 
-| File | Put here | Write when |
-|---|---|---|
-| `docs/decisions/ITD-NNN-*.md` | One tech decision + options + why | You pick between real alternatives |
-| `docs/TRADEOFFS.md` | Accepted downsides and deferred work | You knowingly accept a downside |
-| `docs/LEARNINGS.md` | Mistake → signal → fix | Something was wrong and got corrected |
-| `docs/ARCHITECTURE.md` | Current system shape and data flow | A component or flow changes |
-| `README.md` | Setup, local test, deploy, runbook | Setup or run steps change |
+
+| File                          | Put here                             | Write when                            |
+| ----------------------------- | ------------------------------------ | ------------------------------------- |
+| `docs/decisions/ITD-NNN-*.md` | One tech decision + options + why    | You pick between real alternatives    |
+| `docs/TRADEOFFS.md`           | Accepted downsides and deferred work | You knowingly accept a downside       |
+| `docs/LEARNINGS.md`           | Mistake → signal → fix               | Something was wrong and got corrected |
+| `docs/ARCHITECTURE.md`        | Current system shape and data flow   | A component or flow changes           |
+| `README.md`                   | Setup, local test, deploy, runbook   | Setup or run steps change             |
+
+
+
 
 ### When to log
 
@@ -105,6 +115,8 @@ Index: `docs/decisions/README.md` — always update it.
 
 ---
 
+
+
 ## 4. Engineering rules
 
 1. **No secrets** in code, Terraform, state, or committed config. Key Vault + Managed Identity only.
@@ -118,6 +130,8 @@ Index: `docs/decisions/README.md` — always update it.
 
 ---
 
+
+
 ## 5. Working conventions
 
 - Plan first. Use a TODO list for multi-step work.
@@ -127,6 +141,8 @@ Index: `docs/decisions/README.md` — always update it.
 - Imports at the top of the module.
 
 ---
+
+
 
 ## 6. Definition of done
 
@@ -139,6 +155,8 @@ Index: `docs/decisions/README.md` — always update it.
 - [ ] New/updated docs follow the writing rules in §2
 
 ---
+
+
 
 ## 7. Repo layout
 

@@ -56,9 +56,8 @@ _GRADE_ALIASES = {
     "kindergarten": 0,
 }
 
-# Only unambiguous formats are accepted. `03/04/2026` is rejected on purpose - it could be
-# March 4th or April 3rd, and guessing would silently corrupt freshness comparisons.
-_TIMESTAMP_FORMATS = ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d")
+# Source timestamps are ISO 8601/RFC 3339. `Z` means UTC; offsets are normalized to UTC.
+# Slash dates are rejected because they are ambiguous across locales.
 
 
 class TransformError(ValueError):
@@ -120,18 +119,14 @@ def parse_timestamp(value: Any) -> datetime | None:
         text = clean_text(value)
         if text is None:
             return None
+        if "T" not in text:
+            return None
         candidate = text[:-1] + "+00:00" if text.endswith("Z") else text
-        parsed = None
         try:
             parsed = datetime.fromisoformat(candidate)
         except ValueError:
-            for fmt in _TIMESTAMP_FORMATS:
-                try:
-                    parsed = datetime.strptime(text, fmt)
-                    break
-                except ValueError:
-                    continue
-        if parsed is None:
+            return None
+        if parsed.tzinfo is None:
             return None
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=UTC)

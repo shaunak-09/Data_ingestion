@@ -64,7 +64,7 @@ def _field_failure(record: dict[str, Any]) -> Failure | None:
     if updated_at is None:
         return (
             ReasonCode.INVALID_TIMESTAMP,
-            "updated_at is not an unambiguous ISO 8601 timestamp",
+            "updated_at is not an ISO 8601 timestamp",
             "updated_at",
         )
     if updated_at > datetime.now(UTC) + MAX_FUTURE_UPDATED_AT_SKEW:

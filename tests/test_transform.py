@@ -105,22 +105,35 @@ def test_unknown_enrollment_status_returns_none():
     [
         ("2026-07-30T08:15:00Z", datetime(2026, 7, 30, 8, 15, tzinfo=UTC)),
         ("2026-07-29T16:45:00+02:00", datetime(2026, 7, 29, 14, 45, tzinfo=UTC)),
-        ("2026-07-30 09:00:00", datetime(2026, 7, 30, 9, 0, tzinfo=UTC)),
-        ("2026-07-28", datetime(2026, 7, 28, 0, 0, tzinfo=UTC)),
+        ("2026-07-30T09:00:00+00:00", datetime(2026, 7, 30, 9, 0, tzinfo=UTC)),
     ],
 )
 def test_timestamps_land_in_utc(raw, expected):
     assert parse_timestamp(raw) == expected
 
 
-@pytest.mark.parametrize("raw", ["30/07/2026", "07/30/2026", "yesterday", "", None])
-def test_ambiguous_or_unparseable_timestamps_are_rejected(raw):
-    """Guessing between day-first and month-first would silently corrupt freshness checks."""
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "07/30/2026",
+        "30/07/2026",
+        "03/04/2026",
+        "30-07-2026",
+        "2026-07-30",
+        "2026-07-30T08:15:00",
+        "2026-30-07",
+        "yesterday",
+        "",
+        None,
+    ],
+)
+def test_unparseable_timestamps_are_rejected(raw):
+    """Only ISO 8601 source timestamps are accepted."""
     assert parse_timestamp(raw) is None
 
 
 def test_future_timestamp_is_currently_accepted():
-    assert parse_timestamp("2099-01-01") == datetime(2099, 1, 1, tzinfo=UTC)
+    assert parse_timestamp("2099-01-01T00:00:00Z") == datetime(2099, 1, 1, tzinfo=UTC)
 
 
 @pytest.mark.parametrize("raw", [1710000000, "2026-13-45"])

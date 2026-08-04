@@ -3,7 +3,7 @@ S2001,,Brown,5,SCH-01,jo.brown@example.edu,active,2026-07-30T08:00:00Z,+1-206-55
 S2002,Ivy,Chen,7,SCH-01,ivy.chen(at)example.edu,active,2026-07-30T08:05:00Z,+1-206-555-0202
 S2003,Kai,Silva,14,SCH-02,kai.silva@example.edu,active,2026-07-30T08:10:00Z,+1-206-555-0203
 S2004,Lena,Fischer,6,SCH-02,lena.fischer@example.edu,enrolled_forever,2026-07-30T08:15:00Z,+1-206-555-0204
-S2005,Omar,Diab,8,SCH-03,omar.diab@example.edu,active,30/07/2026,+1-206-555-0205
+S2005,Omar,Diab,8,SCH-03,omar.diab@example.edu,active,2026-13-45,+1-206-555-0205
 S2006,Ruth,Adeyemi,3,SCH-03,ruth.adeyemi@example.edu,active,2026-07-30T08:25:00Z,+1-206-555-0206,unexpected-extra-column
 S2007,Tom,Weber,4,SCH-01
 S2008,Zoe,Ali,2,SCH-01,zoe.ali@example.edu,active,2026-07-30T09:00:00Z,+1-206-555-0208

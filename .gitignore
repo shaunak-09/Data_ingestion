@@ -15,3 +15,6 @@ backend.hcl
 
 # Local object-store root used by the CLI and tests
 .localstore/
+
+# Personal showcase script - not part of the submitted docs
+docs/PRODUCT_WALKTHROUGH.md
