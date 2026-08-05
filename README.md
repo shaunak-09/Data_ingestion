@@ -16,18 +16,18 @@ flowchart LR
   Core -->|invalid + reason| Q[quarantine/]
 ```
 
-- Architecture and file-by-file map: `[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)`
-- Test scenarios and results: `[docs/TEST_RESULTS.md](docs/TEST_RESULTS.md)`
-- Why it is built this way: `[docs/decisions/](docs/decisions/README.md)`
-- Accepted downsides: `[docs/TRADEOFFS.md](docs/TRADEOFFS.md)`
-- Mistakes made and fixed: `[docs/LEARNINGS.md](docs/LEARNINGS.md)`
-- Scaling beyond current limits: `[docs/SCALING.md](docs/SCALING.md)`
+- Architecture and file-by-file map: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Test scenarios and results: [docs/TEST_RESULTS.md](docs/TEST_RESULTS.md)
+- Why it is built this way: [docs/decisions/](docs/decisions/README.md)
+- Accepted downsides: [docs/TRADEOFFS.md](docs/TRADEOFFS.md)
+- Mistakes made and fixed: [docs/LEARNINGS.md](docs/LEARNINGS.md)
+- Scaling beyond current limits: [docs/SCALING.md](docs/SCALING.md)
 
 ## Setup, execution, and configuration
 
 Full step-by-step instructions (local run, tests, environment variables, and cloud deployment
-inputs) are in `[docs/DEPLOY.md](docs/DEPLOY.md)`. Environment variable reference with defaults
-and comments is in `[.env.example](.env.example)`.
+inputs) are in [docs/DEPLOY.md](docs/DEPLOY.md). Environment variable reference with defaults
+and comments is in [.env.example](.env.example).
 
 Quick start:
 
@@ -45,7 +45,7 @@ copy samples\students_valid.csv .localstore\landing\
 python -m src.cli csv
 ```
 
-See `[docs/DEPLOY.md](docs/DEPLOY.md)` for the API path, running tests, and deploying to Azure via
+See [docs/DEPLOY.md](docs/DEPLOY.md) for the API path, running tests, and deploying to Azure via
 GitHub Actions.
 
 ## Known limitations
@@ -59,7 +59,7 @@ row-by-row, not as one clear "wrong file type" error.
 - Quarantine records are overwritten on retry; if the same chunk fails twice, only the latest
 failure's quarantine record is kept, not a history of every attempt.
 - No queue-based fan-out; ingestion is sequential per scheduled run
-(`[docs/TRADEOFFS.md](docs/TRADEOFFS.md)`).
+([docs/TRADEOFFS.md](docs/TRADEOFFS.md)).
 - At-least-once processing, not exactly-once; safety comes from idempotent upserts, not delivery
 guarantees.
 - New source fields are not auto-mapped. They land safely in `raw_payload` (JSONB) until someone
